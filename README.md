@@ -80,9 +80,50 @@ remote_write:
 
 Once the configuration file has been updated, restart Prometheus to apply the changes:
 
-- **For Docker:**
+- **For Minikube:**
   ```bash
-  docker run -p 9090:9090 -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+  kubectl create configmap prometheus-config --from-file=prometheus.yml
+  kubectl apply -f prometheus-deployment.yml
+  ```
+
+  Ensure you have a `prometheus-deployment.yml` file with the following content:
+
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: prometheus
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: prometheus
+    template:
+      metadata:
+        labels:
+          app: prometheus
+      spec:
+        containers:
+        - name: prometheus
+          image: prom/prometheus
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+  ```
+
+  Then, expose the Prometheus service:
+
+  ```bash
+  kubectl expose deployment prometheus --type=NodePort --port=9090
+  minikube service prometheus
   ```
 
 - **For Kubernetes (if using Helm):**
