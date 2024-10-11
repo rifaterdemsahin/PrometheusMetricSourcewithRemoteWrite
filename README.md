@@ -16,6 +16,8 @@ If you are using Minikube for your local Kubernetes cluster, follow these steps:
 2. **Create ConfigMap:**
   ```bash
   kubectl create configmap prometheus-config --from-file=prometheus.yml
+
+  kubectl apply -f prometheus.yml
   ```
 
 3. **Deploy Prometheus:**
