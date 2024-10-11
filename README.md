@@ -4,7 +4,72 @@ Here’s a basic `README` template for setting up and configuring the Prometheus
 
 # 🚀 Prometheus Metric Source with Remote Write
 
-## 📖 Overview
+### Using Minikube
+
+If you are using Minikube for your local Kubernetes cluster, follow these steps:
+
+1. **Start Minikube:**
+  ```bash
+  minikube start
+  ```
+
+2. **Create ConfigMap:**
+  ```bash
+  kubectl create configmap prometheus-config --from-file=prometheus.yml
+  ```
+
+3. **Deploy Prometheus:**
+  Ensure you have a `prometheus-deployment.yml` file with the following content:
+
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: prometheus
+  spec:
+    replicas: 1
+    selector:
+     matchLabels:
+      app: prometheus
+    template:
+     metadata:
+      labels:
+        app: prometheus
+     spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus
+        args:
+         - "--config.file=/etc/prometheus/prometheus.yml"
+        ports:
+         - containerPort: 9090
+        volumeMounts:
+         - name: config-volume
+          mountPath: /etc/prometheus
+     volumes:
+      - name: config-volume
+        configMap:
+         name: prometheus-config
+  ```
+
+  Apply the deployment:
+  ```bash
+  kubectl apply -f prometheus-deployment.yml
+  ```
+
+4. **Expose Prometheus Service:**
+  ```bash
+  kubectl expose deployment prometheus --type=NodePort --port=9090
+  minikube service prometheus
+  ```
+
+5. **Verify Deployment:**
+  Check the Prometheus logs to ensure it is running correctly:
+  ```bash
+  kubectl logs deployment/prometheus
+  ```
+
+By following these steps, you can set up Prometheus with remote write capabilities on a Minikube cluster.
 
 This repository provides a simple setup for exporting Prometheus metrics using the **Remote Write** feature. Prometheus **Remote Write** allows metrics to be pushed to remote storage backends, enabling long-term retention, advanced query capabilities, and high availability.
 
@@ -13,7 +78,6 @@ This repository provides a simple setup for exporting Prometheus metrics using t
 Before you begin, ensure you have the following installed on your system:
 - Prometheus (version 2.x or higher)
 - A configured remote storage backend (such as Cortex, Thanos, or VictoriaMetrics)
-- Docker (optional, if using Docker-based deployment)
 - Kubernetes (optional, if using Kubernetes for deployment)
 
 ## 🌟 Features
@@ -28,19 +92,14 @@ Before you begin, ensure you have the following installed on your system:
 
 If Prometheus is not installed, follow the installation steps:
 
-- **For Docker:**
-  ```bash
-  docker run -p 9090:9090 prom/prometheus
-  ```
-
 - **For Kubernetes (via Helm):**
   ```bash
   helm install prometheus prometheus-community/prometheus
   ```
 
-### Step 2: Configure `prometheus.yml`
+### Step 2: Configure `prometheus-remotewrite.yml`
 
-Modify the Prometheus configuration file (`prometheus.yml`) to include the `remote_write` section. Here's an example configuration:
+Modify the Prometheus configuration file (`prometheus-remotewrite.yml`) to include the `remote_write` section. Here's an example configuration:
 
 ```yaml
 global:
@@ -86,7 +145,7 @@ Once the configuration file has been updated, restart Prometheus to apply the ch
   kubectl apply -f prometheus-deployment.yml
   ```
 
-  Ensure you have a `prometheus-deployment.yml` file with the following content:
+  Ensure you have a `prometheus-deployment-remotewrite.yml` file with the following content:
 
   ```yaml
   apiVersion: apps/v1
@@ -136,7 +195,7 @@ Once the configuration file has been updated, restart Prometheus to apply the ch
 You can check whether the metrics are being successfully sent to the remote storage backend by checking the Prometheus logs:
 
 ```bash
-docker logs <prometheus-container-id>
+kubectl logs deployment/prometheus
 ```
 
 Look for logs related to `remote_write` to confirm that metrics are being transmitted.

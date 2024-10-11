@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s # How often to scrape metrics
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+  static_configs:
+    - targets: ['localhost:9090']
+
+remote_write:
+  - url: "http://<remote-storage-url>/api/v1/write"
+  queue_config:
+    capacity: 5000
+    max_shards: 200
+    min_shards: 1
+    max_samples_per_send: 1000
+    batch_send_deadline: 5s
+  write_relabel_configs:
+    - source_labels: [__name__]
+    regex: "up"
+    action: keep
